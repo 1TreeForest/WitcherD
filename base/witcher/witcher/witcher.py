@@ -310,7 +310,7 @@ class Witcher():
             urlquery = url.query.encode("utf-8")
             post_data = req.get('_postData','').encode("utf-8")
 
-            headers = req.get('_headers','')
+            headers = req.get('_headers',{})
             headers_out = ""
             for k,v in headers.items():
                 if k.upper() == "SOAPACTION" or k.upper() == "HNAP_AUTH":

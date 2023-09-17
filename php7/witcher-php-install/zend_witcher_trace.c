@@ -149,7 +149,8 @@ static void afl_forkserver() {
     }
 }
 
-
+//+ From here is what Witcher modified +
+//+ Load and split parameters +
 void load_variables(char *str, int var_type){
     char * tostr = strdup(str);
     char * end_str;
@@ -258,6 +259,7 @@ void prefork_cgi_setup(){
     char* preset_cookie = (char *) malloc(MAX_CMDLINE_LEN);
     memset(preset_cookie, 0, MAX_CMDLINE_LEN);
 
+    //+ Perform login +
     if (login_cookie){
         strcat(preset_cookie, login_cookie);
         setenv(env_vars[0], login_cookie, 1);
@@ -304,6 +306,8 @@ void prefork_cgi_setup(){
     }
     witcher_print_op = getenv("WITCHER_PRINT_OP");
 }
+
+
 void setup_cgi_env(){
 
     // strict is set for the modified /bin/dash
@@ -469,7 +473,7 @@ void afl_error_handler(int nSignum) {
 /********************************** END HTTP direct **************************************************/
 /************************************************************************************************/
 
-
+//+ Get shared memory by id +
 unsigned char *cgi_get_shm_mem(char * ch_shm_id) {
     char *id_str;
     int shm_id;
@@ -488,6 +492,7 @@ unsigned char *cgi_get_shm_mem(char * ch_shm_id) {
 
 }
 
+//+ Tracing
 /**
  * The witcher init, is needed at the start of the script and is only executed once per child
  * it sets up the tracing enviornment
@@ -523,7 +528,7 @@ void witcher_cgi_trace_init(char * ch_shm_id) {
     //fflush(stdout);
 }
 
-
+//+ Record and analyze after each tracing process +
 void witcher_cgi_trace_finish()
 {
     start_tracing = false;
@@ -581,7 +586,7 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline){
     if (witcher_print_op){
         const char *opname = zend_get_opcode_name(opline->opcode);
         char tracefn[50];
-        sprintf(tracefn, "/tmp/trace-%s.dat", witcher_print_op);
+        sprintf(tracefn, "/tmp/trace-%s.dat", witcher_print_op); //+ Concate the file name +
         ofile = fopen(tracefn, "a");
         debug_print(("%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type));
         fprintf(ofile, "%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type);
@@ -589,18 +594,18 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline){
 
     if (start_tracing) {
 
-        op = (opline->lineno << 8) | opline->opcode ; //opcode; //| (lineno << 8);
+        op = (opline->lineno << 8) | opline->opcode ; //+ Unique ID for the current basic block +
 
         if (last != 0) {
-            int bitmapLoc = (op ^ last) % MAPSIZE;
+            int bitmapLoc = (op ^ last) % MAPSIZE; //+ Unique ID for the current path +
 
             // turned off to disable afl code tracing
             afl_area_ptr[bitmapLoc]++;
         }
     }
-    last = op;
+    last = op; //+ The current block becomes the parent block of potential new child blocks.
 
-    if (ofile){
+    if (ofile){  //+ Record and save +
         fflush(ofile);
         fclose(ofile);
     }

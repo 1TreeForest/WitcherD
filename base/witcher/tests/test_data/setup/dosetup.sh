@@ -1,10 +1,9 @@
 #! /bin/bash
 
 cd "$(dirname "$0")"
-rm -rf  /results/unittests-EXWICHR/*
+rm -rf /test/EXWICHR/*
 cp ../*.json /test
-mkdir -p /app/test
-cp ../code/*.php /app/test
+cp ../code/*.php /app
 
 echo "DROP DATABASE IF EXISTS testdb" | sudo mysql
 echo "CREATE DATABASE testdb" | sudo mysql

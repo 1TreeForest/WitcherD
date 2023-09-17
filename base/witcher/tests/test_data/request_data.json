@@ -1,15 +1,6 @@
 {
   "requestsFound": {
     "GET http://localhost/test-get-5-crosspol.php ": {
-      "_id": 1,
-      "_urlstr": "http://localhost/test-get-5-crosspol.php",
-      "_url": "http://localhost/test-get-5-crosspol.php?&nv3=3&nv82=4&",
-      "_resourceType": "document",
-      "_method": "GET",
-      "_postData": "",
-      "key": "POST http://localhost/test-get-5-crosspol.php "
-    },
-    "GET http://localhost/test-get-5-crosspol.php ": {
       "_id": 2,
       "_urlstr": "http://localhost/test-get-5-crosspol.php",
       "_url": "http://localhost/test-get-5-crosspol.php?nv1=1&nv2=2&nv3=3&nv92=5",

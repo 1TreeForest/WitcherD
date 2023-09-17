@@ -5,7 +5,7 @@ import glob
 import sys
 import os
 
-DEFAULT_CMD = ["python", "-m", "witcher", "/test", "EXWICHR"]
+DEFAULT_CMD = ["python", "-m", "witcher", "--testloc", "/test", "--testver", "EXWICHR"]
 DEFUALT_CMD_CRASH = DEFAULT_CMD + ["-C"]
 
 class WitcherTest(unittest.TestCase):
@@ -60,7 +60,7 @@ class WitcherTest(unittest.TestCase):
             results = fp.read()
 
         self.assertTrue(results.find(b"fuzzers running until first crash or timeout") > -1, f"Fuzzers are not running results = \n{results}\n\n")
-        self.assertTrue(results.find(b"3 fuzzers running") > -1, "Running different than 3 fuzzers")
+        self.assertTrue(results.find(b"1 fuzzers running") > -1, "Running different than 1 fuzzers")
 
         for f in glob.glob("/tmp/output/fuzzer-*.log"):
             with open(f, "rb") as fp:
@@ -70,7 +70,7 @@ class WitcherTest(unittest.TestCase):
         print(f"[+] {tname} completed successfully")
 
 
-    def test_afuzz_znext(self):
+    def test_fuzz_znext(self):
         """
         Tests roll to next script, so default 30 sec timeout, wait 45 secs, and see if we have the results of last one
         and new one in the /tmp/output
@@ -83,7 +83,7 @@ class WitcherTest(unittest.TestCase):
 
         #results = open('/tmp/unitest_out_popen.log', "rb").read()
 
-        for f in glob.glob("/results/unittests-EXWICHR/tr?_test+test-findvar-1.php/fuzzer-*.log"):
+        for f in glob.glob("/test/EXWICHR/unittests-EXWICHR/tr?_test-findvar-1.php/fuzzer-*.log"):
             with open(f, "rb") as fp:
                 logdata = fp.read()
             self.assertTrue(logdata.find(b"All set and ready to roll") > -1, f"Errror session completed and copied {f}")
@@ -114,11 +114,11 @@ class WitcherTest(unittest.TestCase):
         self.start_fuzzer(tname, cmd, timeout=120)
 
         # results = open('/tmp/unitest_out_popen.log', "rb").read()
-        crashfiles = glob.glob("/results/unittests-EXWICHR/tr?_test+test-2.php/fuzzer-*/crashes/id*")
+        crashfiles = glob.glob("/test/EXWICHR/unittests-EXWICHR/tr?_test-2.php/fuzzer-*/crashes/id*")
         crashcnt = len(crashfiles)
 
         self.assertTrue(crashcnt >= 1, f"Problem with number of crashes found cnt= {crashcnt}, dirlist={crashfiles}")
-        fuzzlogs = glob.glob("/results/unittests-EXWICHR/tr?_test+test-2.php/fuzzer-1.log")
+        fuzzlogs = glob.glob("/test/EXWICHR/unittests-EXWICHR/tr?_test-2.php/fuzzer-*.log")
         runcnt = len(fuzzlogs)
         self.assertTrue(runcnt==1, f"Problem with number of directories created runcnt = {runcnt}, dirlist={fuzzlogs}")
 
@@ -148,7 +148,7 @@ class WitcherTest(unittest.TestCase):
 
         self.start_fuzzer(tname, DEFUALT_CMD_CRASH, timeout=200)
 
-        with open("/results/unittests-EXWICHR/fuzz_campaign_status.json","r") as jfp:
+        with open("/test/EXWICHR/unittests-EXWICHR/fuzz_campaign_status.json","r") as jfp:
             jconfig = json.load(jfp)
 
         for target in jconfig[0]["targets"][jdata["script_start_index"]:jdata["script_end_index"]]:
@@ -161,8 +161,8 @@ class WitcherTest(unittest.TestCase):
             if skipper_found:
                 continue
             encoded_path = target["target_path"].replace("/app/","").replace("/", "+")
-            results_dirs = glob.glob("/results/unittests-EXWICHR/tr0*")
-            full_path = f"/results/unittests-EXWICHR/tr0_{encoded_path}"
+            results_dirs = glob.glob("/test/EXWICHR/unittests-EXWICHR/tr0*")
+            full_path = f"/test/EXWICHR/unittests-EXWICHR/tr0_{encoded_path}"
             self.assertTrue(os.path.isdir(full_path), f"Directory with {full_path} does not exist in {results_dirs}")
 
         print(f"\n[+] {tname} completed successfully\n")
@@ -189,11 +189,11 @@ class WitcherTest(unittest.TestCase):
         self.start_fuzzer(tname, cmd, timeout=200)
 
         # results = open('/tmp/unitest_out_popen.log', "rb").read()
-        crash_inputs = glob.glob("/results/unittests-EXWICHR/tr?_test+test-2.php/fuzzer-*/crashes/id*")
+        crash_inputs = glob.glob("/test/EXWICHR/unittests-EXWICHR/tr?_test-2.php/fuzzer-*/crashes/id*")
         crashcnt = len(crash_inputs)
         print(f"Problem with number of crashes created runcnt = {crashcnt}, dirlist={crash_inputs}")
 
-        fuzzlogs = glob.glob("/results/unittests-EXWICHR/tr?_test+test-2.php/fuzzer-1.log")
+        fuzzlogs = glob.glob("/test/EXWICHR/unittests-EXWICHR/tr?_test-2.php/fuzzer-*.log")
         runcnt = len(fuzzlogs)
         print(f"fuzzlogs = {fuzzlogs}, runcnt={runcnt}")
         self.assertTrue(runcnt == 3, f"Problem with number of directories created runcnt = {runcnt}, dirlist={fuzzlogs}")
