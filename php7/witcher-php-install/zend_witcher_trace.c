@@ -59,7 +59,7 @@ static bool start_tracing = false;
 
 static char* env_vars[2] = { "HTTP_COOKIE","QUERY_STRING"};
 char *login_cookie = NULL, *mandatory_cookie = NULL, *preset_cookie = NULL;
-char *witcher_print_op = NULL;
+char *witcher_print_op = NULL; //+ Print each op if set true +
 
 char *main_filename;
 char session_id[40];
