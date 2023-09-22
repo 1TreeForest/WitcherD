@@ -24,7 +24,7 @@
       "_url": "http://localhost/test-2.php",
       "_resourceType": "document",
       "_method": "POST",
-      "_postData": "nv1=1&nv2=2&nv3=3&nv4=4&",
+      "_postData": "nv1=1&nv2=2&nv4=4&",
       "attempts": 3,
       "processed": 3,
       "from": "LoginInterceptedRequest",

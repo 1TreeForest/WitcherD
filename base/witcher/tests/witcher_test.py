@@ -132,6 +132,13 @@ class WitcherTest(unittest.TestCase):
         import json
         tname = "fuzz_sub_indexing_and_skipper"
         print(f"[+] {tname} started")
+
+        #+ backup the original config file +
+        if os.path.exists("/test/witcher_config.json"):
+            with open("/test/witcher_config.json", "r") as original_file:
+                with open("/test/witcher_config.json.bak", "w") as backup_file:
+                    backup_file.write(original_file.read())
+
         with open("/test/witcher_config.json","r") as jfp:
             jdata = json.load(jfp)
 
@@ -142,7 +149,7 @@ class WitcherTest(unittest.TestCase):
         jdata["script_start_index"] = 2
         jdata["script_end_index"] = 5
         jdata["script_skip_list"] = ["test-5.php"]
-
+        
         with open("/test/witcher_config.json", "w") as jfp:
             json.dump(jdata, jfp)
 
@@ -168,6 +175,12 @@ class WitcherTest(unittest.TestCase):
         print(f"\n[+] {tname} completed successfully\n")
 
         sys.stdout.flush()
+        #+ restore the original config file and delete the backup +
+        if os.path.exists("/test/witcher_config.json.bak"):
+            with open("/test/witcher_config.json.bak", "r") as backup_file:
+                with open("/test/witcher_config.json", "w") as original_file:
+                    original_file.write(backup_file.read())
+            os.remove("/test/witcher_config.json.bak")
 
     def test_fuzz_ztrials(self):
         """

@@ -30,7 +30,7 @@
   },
 
   "direct":{
-    "url": "/app/config.php",
+    "url": "NO_LOGIN",
        "postData": "",
     "getData": "",
     "positiveHeaders": {},
