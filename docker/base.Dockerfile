@@ -4,22 +4,25 @@ LABEL maintainer="erik.trickel@asu.edu"
 
 
 # Use the fastest APT repo
-#COPY ./files/sources.list.with_mirrors /etc/apt/sources.list
-RUN apt-get update
+COPY ./files/sources.list.with_mirrors /etc/apt/sources.list
+RUN dpkg --add-architecture i386 && apt-get update
 
 ENV DEBIAN_FRONTEND noninteractive
 
 
 # Install apt-fast to speed things up
-RUN apt-get install -y aria2 curl wget virtualenvwrapper
-
-RUN apt-get install -y git
+RUN apt-get update \
+    && apt-get install -y aria2 curl wget virtualenvwrapper \
+    && apt-get install -y git
 
 #APT-FAST installation
-RUN /bin/bash -c "$(curl -sL https://git.io/vokNn) "
-
-RUN apt-fast update && apt-fast -y upgrade && apt-fast update
-
+RUN apt-get install -y software-properties-common \
+    && add-apt-repository ppa:apt-fast/stable \
+    && apt update \
+    && apt install apt-fast \
+    && apt-fast update --fix-missing \
+    && apt-fast -y upgrade
+    
 # Install all APT packages
 
 RUN apt-fast install -y git build-essential  \
@@ -45,7 +48,6 @@ RUN apt-fast install -y git build-essential  \
                         # web
                         apache2 apache2-dev supervisor
 
-
 RUN rm -rf /var/lib/mysql
 RUN  /usr/sbin/mysqld --initialize-insecure
 
@@ -63,14 +65,14 @@ RUN useradd -s /bin/bash -m wc
 RUN usermod -aG sudo wc
 RUN echo "wc ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-RUN su - wc -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh && mkvirtualenv -p `which python3` witcher"
+#RUN su - wc -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh && mkvirtualenv -p `which python3` witcher"
 
 ######### Install phuzzer stuff
 RUN apt-fast install -y libxss1 bison
 
-RUN su - wc -c "source /home/wc/.virtualenvs/witcher/bin/activate && pip install protobuf termcolor "
+RUN su - wc -c "pip3 install protobuf termcolor "
 
-RUN su - wc -c "source /home/wc/.virtualenvs/witcher/bin/activate && pip install git+https://github.com/etrickel/phuzzer"
+RUN su - wc -c "pip3 install git+https://github.com/etrickel/phuzzer"
 
 ######### last installs, b/c don't want to wait for phuzzer stuff again.
 RUN apt-fast install -y jq
@@ -86,8 +88,8 @@ RUN chown wc:wc -R . && cp -r /home/wc/docker_env/. .
 COPY config/.bash_prompt /home/wc/.bash_prompt
 RUN mkdir /home/wc/.ssh && cat pubkeys/* >> /home/wc/.ssh/authorized_keys && chmod 400 /home/wc/.ssh/* && rm -rf pubkeys
 
-RUN echo 'source /usr/share/virtualenvwrapper/virtualenvwrapper.sh' >> /home/wc/.bashrc
-RUN echo 'workon witcher' >> /home/wc/.bashrc
+#RUN echo 'source /usr/share/virtualenvwrapper/virtualenvwrapper.sh' >> /home/wc/.bashrc
+#RUN echo 'workon witcher' >> /home/wc/.bashrc
 
 ######### root's bash and emacs profile
 RUN sudo cp -r /home/wc/docker_env/. /root/
@@ -137,14 +139,14 @@ ENV AFL_PATH=/afl
 COPY --chown=wc:wc helpers/ /helpers/
 COPY --chown=wc:wc phuzzer /helpers/phuzzer
 
-RUN su - wc -c "source /home/wc/.virtualenvs/witcher/bin/activate &&  pip install archr ipdb "
+RUN su - wc -c " pip3 install archr ipdb "
 
-RUN su - wc -c "source /home/wc/.virtualenvs/witcher/bin/activate &&  cd /helpers/phuzzer && pip install -e ."
+RUN su - wc -c "cd /helpers/phuzzer && pip3 install -e ."
 
 COPY --chown=wc:wc witcher /witcher/
-RUN su - wc -c "source /home/wc/.virtualenvs/witcher/bin/activate &&  cd /witcher && pip install -e ."
+RUN su - wc -c "cd /witcher && pip3 install -e ."
 
-RUN su - wc -c "source /home/wc/.virtualenvs/witcher/bin/activate && pip install ipython "
+RUN su - wc -c "pip3 install ipython "
 
 COPY --chown=wc:wc wclibs /wclibs
 
@@ -167,7 +169,7 @@ ENV WC_SINGLE_SCRIPT=""
 
 RUN mkdir -p /test && chown wc:wc /test
 
-RUN su - wc -c "source /home/wc/.virtualenvs/witcher/bin/activate && pip install ply "
+RUN su - wc -c "pip3 install ply "
 
 CMD /netconf.sh && /usr/bin/supervisord
 

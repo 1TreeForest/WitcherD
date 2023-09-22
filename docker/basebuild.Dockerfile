@@ -3,18 +3,26 @@ FROM ubuntu:bionic
 LABEL maintainer="erik.trickel@asu.edu"
 
 # Use the fastest APT repo
-#COPY ./files/sources.list.with_mirrors /etc/apt/sources.list
+COPY ./files/sources.list.with_mirrors /etc/apt/sources.list
 RUN dpkg --add-architecture i386 && apt-get update
 
 ENV DEBIAN_FRONTEND noninteractive
 
-
 # Install apt-fast to speed things up
-RUN apt-get update --fix-missing && apt-get install -y aria2 curl wget virtualenvwrapper git && \
-    #APT-FAST installation
-    /bin/bash -c "$(curl -sL https://git.io/vokNn) " && \
-    apt-fast update && apt-fast -y upgrade && apt-fast update --fix-missing
-RUN    apt-fast install -y build-essential  \
+RUN apt-get update \
+    && apt-get install -y aria2 curl wget \
+    && apt-get install -y git \
+    && apt-get install -y python3-apt
+
+#APT-FAST installation
+RUN apt-get install -y software-properties-common \
+    && add-apt-repository ppa:apt-fast/stable \
+    && apt update \
+    && apt install apt-fast \
+    && apt-fast update --fix-missing \
+    && apt-fast -y upgrade
+
+RUN apt-fast install -y build-essential  \
                         #Libraries
                         libxml2-dev libxslt1-dev libffi-dev cmake libreadline-dev \
                         libtool debootstrap debian-archive-keyring libglib2.0-dev libpixman-1-dev \

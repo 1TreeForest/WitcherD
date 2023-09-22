@@ -3,36 +3,43 @@ FROM ubuntu:bionic
 LABEL maintainer="erik.trickel@asu.edu"
 
 # Use the fastest APT repo
-#COPY ./files/sources.list.with_mirrors /etc/apt/sources.list
-RUN apt-get update --fix-missing
+COPY ./files/sources.list.with_mirrors /etc/apt/sources.list
+RUN dpkg --add-architecture i386 && apt-get update
 
 ENV DEBIAN_FRONTEND noninteractive
 
-
 # Install apt-fast to speed things up
-RUN apt-get install -y aria2 curl wget virtualenvwrapper git
+RUN apt-get update \
+    && apt-get install -y aria2 curl wget \
+    && apt-get install -y git \
+    && apt-get install -y python3-apt
 
 #APT-FAST installation
-RUN /bin/bash -c "$(curl -sL https://git.io/vokNn) "
-
-RUN apt-fast update --fix-missing && apt-fast -y upgrade && apt-fast update
+RUN apt-get install -y software-properties-common \
+    && add-apt-repository ppa:apt-fast/stable \
+    && apt update \
+    && apt install apt-fast \
+    && apt-fast update --fix-missing \
+    && apt-fast -y upgrade
 
 # Install all APT packages
-
-RUN apt-get install -y sudo software-properties-common net-tools python3-pip \
+RUN apt-fast install -y sudo software-properties-common net-tools python3-pip \
                         # other stuff
                         mysql-server \
                         # editors
                         vim  \
-                        # analysis
-                        afl \
                         # web
                         apache2 apache2-dev
 
-RUN rm -rf /var/lib/mysql
+# Install AFL
+RUN git clone https://github.com/google/AFL.git /afl \
+    && cd /afl \
+    && make && make install
+
+RUN sudo rm -rf /var/lib/mysql
 RUN  /usr/sbin/mysqld --initialize-insecure
 
-RUN pip3 install supervisor
+RUN pip3 install --upgrade pip && pip3 install supervisor
 
 # Create wc user
 RUN useradd -s /bin/bash -m wc
@@ -40,14 +47,14 @@ RUN useradd -s /bin/bash -m wc
 RUN usermod -aG sudo wc
 RUN echo "wc ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
-RUN su - wc -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh && mkvirtualenv -p `which python3` witcher"
+#RUN su - wc -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh && mkvirtualenv -p `which python3` witcher"
 
 ######### Install phuzzer stuff
-RUN apt-fast install -y libxss1 bison
+RUN apt-fast update && apt-fast install -y libxss1 bison
 
-RUN su - wc -c "source /home/wc/.virtualenvs/witcher/bin/activate && pip install protobuf termcolor "
+RUN su - wc -c "pip3 install protobuf==3.19.6 termcolor setuptools"
 
-RUN su - wc -c "source /home/wc/.virtualenvs/witcher/bin/activate && pip install git+https://github.com/etrickel/phuzzer"
+RUN su - wc -c "pip3 install git+https://github.com/etrickel/phuzzer"
 
 ######### last installs, b/c don't want to wait for phuzzer stuff again.
 RUN apt-fast install -y jq
@@ -61,15 +68,18 @@ RUN mkdir -p /home/wc/tmp/emacs-saves
 RUN git clone -q https://github.com/etrickel/docker_env.git && chown wc:wc -R . && cp -r /home/wc/docker_env/. . && sudo cp -r /home/wc/docker_env/. /root/
 COPY config/.bash_prompt /home/wc/.bash_prompt
 
-RUN echo 'source /usr/share/virtualenvwrapper/virtualenvwrapper.sh' >> /home/wc/.bashrc
-RUN echo 'workon witcher' >> /home/wc/.bashrc
+#RUN echo 'source /usr/share/virtualenvwrapper/virtualenvwrapper.sh' >> /home/wc/.bashrc
+#RUN echo 'workon witcher' >> /home/wc/.bashrc
 
 
 ######### NodeJS and NPM Setup
-RUN curl -o- https://raw.githubusercontent.com/creationix/nvm/v0.34.0/install.sh | bash
-RUN echo 'export NVM_DIR=$HOME/.nvm; . $NVM_DIR/nvm.sh; . $NVM_DIR/bash_completion' >> /home/wc/.bashrc
+COPY ./files/nvm_install.sh /home/wc/nvm_install.sh
+RUN bash /home/wc/nvm_install.sh \
+    && echo 'export NVM_DIR=$HOME/.nvm; . $NVM_DIR/nvm.sh; . $NVM_DIR/bash_completion' >> /home/wc/.bashrc \
+    && export NVM_DIR=/home/wc/.nvm \
+    && . $NVM_DIR/nvm.sh \
+    && nvm install 16
 ENV NVM_DIR /home/wc/.nvm
-RUN . $NVM_DIR/nvm.sh && nvm install 16
 #RUN sudo mkdir /node_modules && sudo chown wc:wc /node_modules && sudo apt-get install -y npm
 RUN sudo apt-get install -y npm libgbm-dev
 RUN . $NVM_DIR/nvm.sh && npm install puppeteer cheerio
@@ -111,7 +121,7 @@ COPY --chown=wc:wc phuzzer /helpers/phuzzer
 COPY --chown=wc:wc witcher /witcher/
 
 RUN . $NVM_DIR/nvm.sh && cd /helpers/request_crawler && npm install
-RUN su - wc -c "source /home/wc/.virtualenvs/witcher/bin/activate &&  pip install archr ipdb ply &&  cd /helpers/phuzzer && pip install -e . &&  cd /witcher && pip install -e ."
+RUN su - wc -c "pip3 install nclib==1.0.2 archr ipdb ply &&  cd /helpers/phuzzer && pip3 install -e . &&  cd /witcher && pip3 install -e ."
 
 COPY --from=witcher/basebuild /wclibs/lib_db_fault_escalator.so /lib/
 RUN mkdir -p /wclibs && ln -s /lib/lib_db_fault_escalator.so /wclibs/ && ln -s /lib/lib_db_fault_escalator.so /wclibs/libcgiwrapper.so && ln -s /lib/lib_db_fault_escalator.so /lib/libcgiwrapper.so

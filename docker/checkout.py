@@ -57,6 +57,7 @@ def main():
             print(f"\033[31m{err}\033[0m")
 
     assert success
+    print("Checkout finished")
 
     # Very hackish but qemu has a gazillion of submodules that we don't need.
 

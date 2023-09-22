@@ -68,11 +68,12 @@ COPY config/000-default.conf /etc/apache2/sites-available/
 RUN printf '\nzend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20180731/xdebug.so\nxdebug.mode=coverage\nauto_prepend_file=/enable_cc.php\n\n' >> $(php -i |egrep "Loaded Configuration File.*php.ini"|cut -d ">" -f2|cut -d " " -f2)
 RUN for fn in $(find /etc/php/ . -name 'php.ini'); do printf '\nzend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20180731/xdebug.so\nxdebug.mode=coverage\nauto_prepend_file=/enable_cc.php\n\n' >> $fn; done
 
-#RUN echo alias p='python -m witcher --affinity $(( $(ifconfig |egrep -oh "inet 172[\.0-9]+"|cut -d "." -f4) * 2 ))' >> /home/wc/.bashrc
+RUN echo 'alias p="python -m witcher --affinity $(( $(ifconfig |egrep -oh "inet 172[\.0-9]+"|cut -d "." -f4) * 2 ))"' >> /home/wc/.bashrc
 COPY config/py_aff.alias /root/py_aff.alias
 RUN cat /root/py_aff.alias >> /home/wc/.bashrc
 
-#RUN cp /bin/dash /bin/saved_dash && cp /crashing_dash /bin/dash
+# RUN cp /bin/dash /bin/saved_dash && cp /crashing_dash /bin/dash
+RUN cp /usr/bin/python3 /usr/bin/python
 # there's a problem with building xdebug and the modifid dash, so copy after xdebug
 COPY --from=witcher/basebuild /Widash/archbuilds/dash /bin/dash
 

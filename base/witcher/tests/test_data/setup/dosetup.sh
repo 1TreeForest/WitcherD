@@ -22,8 +22,3 @@ else
     exit 241
 
 fi
-
-
-
-
-

@@ -6,7 +6,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 python3 ${DIR}/checkout.py
 
 if [[ -z ${1} ]]; then
-    builds=( "base" "php7" "php5" )
+    builds=( "base" "php7" ) #+ temp del php5 +
 else
     builds=( "$@" )
 fi
