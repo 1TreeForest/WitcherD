@@ -32,12 +32,12 @@
     },
     "POST http://localhost/test-5-cmd.php ": {
       "_id": 5,
-      "_urlstr": "http://localhost/test-5.php?vul1=6",
-      "_url": "http://localhost/test-5.php?vul1=6",
+      "_urlstr": "http://localhost/test-5-cmd.php?vul1=6",
+      "_url": "http://localhost/test-5-cmd.php?vul1=6",
       "_resourceType": "document",
       "_method": "POST",
       "_postData": "nv1=1&nv2=2&nv3=3&nv4=4&",
-      "key": "POST http://localhost/test-5.php "
+      "key": "POST http://localhost/test-5-cmd.php "
     },
     "POST http://localhost/test-select-3.php ": {
       "_id": 6,

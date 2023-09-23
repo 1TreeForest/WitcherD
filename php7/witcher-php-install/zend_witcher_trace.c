@@ -1,4 +1,5 @@
 #include "../Zend/zend_compile.h"
+#include "../Zend/zend_execute.h"
 #include "zend.h"
 #include "zend_modules.h"
 
@@ -574,26 +575,40 @@ void witcher_cgi_trace_finish()
 void vld_start_trace(){
     if (getenv("WITCHER_PRINT_OP")){
         char tracefn[50];
+        char bbtracefn[50];
         sprintf(tracefn, "/tmp/trace-%s.dat", getenv("WITCHER_PRINT_OP"));
+        sprintf(tracefn, "/tmp/bbtrace-%s.dat", getenv("WITCHER_PRINT_OP"));
         FILE *ofile = fopen(tracefn, "w");
         fclose(ofile);
+        FILE *bbtrace = fopen(tracefn, "w");
+        fclose(bbtrace);
     }
 }
 
 void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline){
     FILE *ofile = NULL;
-
+    FILE *bbtrace = NULL;
+    // Get the current file name and line number
+    const char *filename = zend_get_executed_filename();
+    const uint32_t lineno = zend_get_executed_lineno();
+    
     if (witcher_print_op){
         const char *opname = zend_get_opcode_name(opline->opcode);
         char tracefn[50];
+        char bbtracefn[50];
         sprintf(tracefn, "/tmp/trace-%s.dat", witcher_print_op); //+ Concate the file name +
+        sprintf(bbtracefn, "/tmp/bbtrace-%s.dat", witcher_print_op); //+ Concate the bbtrace file name +
         ofile = fopen(tracefn, "a");
-        debug_print(("%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type));
+        bbtrace = fopen(bbtracefn, "a");
+        fprintf(bbtrace, "test1\n");
+        //debug_print(("%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type));
         fprintf(ofile, "%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type);
+        fprintf(bbtrace, "%s:%d\n", filename, lineno);
+        fprintf(bbtrace, "test2\n");
     }
 
     if (start_tracing) {
-
+        fprintf(bbtrace, "test3\n");
         op = (opline->lineno << 8) | opline->opcode ; //+ Unique ID for the current basic block +
 
         if (last != 0) {
@@ -603,11 +618,15 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline){
             afl_area_ptr[bitmapLoc]++;
         }
     }
-    last = op; //+ The current block becomes the parent block of potential new child blocks.
 
-    if (ofile){  //+ Record and save +
+    last = op; //+ The current block becomes the parent block of potential new child blocks.
+    if (ofile){  //+ opcode Record and save +
         fflush(ofile);
         fclose(ofile);
+    }
+    if (bbtrace){  //+ BB Record and save +
+        fflush(bbtrace);
+        fclose(bbtrace);
     }
 }
 
