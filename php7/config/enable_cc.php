@@ -1,5 +1,5 @@
 <?php
-$do_cc = true;
+$do_cc = false; //+ Temply disable +
 
 if (isset($_SERVER['SCRIPT_FILENAME']) && !empty($_SERVER['SCRIPT_FILENAME'])) {
     $bn = basename($_SERVER['SCRIPT_FILENAME'], ".php");

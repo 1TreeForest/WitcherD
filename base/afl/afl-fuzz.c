@@ -1269,13 +1269,13 @@ struct test_process_info {
     int port;
     int reqr_process_id;
     int process_id;
-    char error_type[20]; /* SQL, Command */
+    char error_type[20]; /* SQL, Command */ //+
     char error_msg[100];
     bool capture;
 };
 /* Get rid of shared memory (atexit handler). */
 
-static void remove_shm(void) {
+static void remove_shm(void) { //+
 
   if (getenv("AFL_META_INFO_ID")){
         // clean up last shared memory area

@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/shm.h>
 #include <sys/wait.h>
+#include <time.h>
 
 int value_diff_changes(char *var1, char *var2);
 void value_diff_report(char *var1, char *var2, int bitmapLoc);
@@ -72,6 +73,33 @@ int trace_index = 0;
 int pipefds[2];
 
 int top_pid=0;
+
+//+ From here is what Directed does +
+static char *last_filename = NULL;
+static u_int32_t last_lineno = 0;
+time_t trace_round = NULL;
+static const char *zend_control_opcodes[] = {
+    "ZEND_JMP",
+    "ZEND_JMPZ",
+    "ZEND_JMPNZ",
+    "ZEND_JMPZNZ",
+    //"ZEND_JMPZ_EX",
+    //"ZEND_JMPNZ_EX",
+    "ZEND_CASE",
+    "ZEND_EXIT",
+    "ZEND_RETURN",
+    "ZEND_CATCH",
+    "ZEND_THROW",
+    "ZEND_YIELD_FROM",
+    "ZEND_HANDLE_EXCEPTION",
+    "ZEND_JMP_SET",
+    "ZEND_YIELD",
+    "ZEND_GENERATOR_RETURN",
+    "ZEND_FAST_CALL",
+    "ZEND_FAST_RET",
+    "ZEND_SWITCH_LONG",
+    "ZEND_SWITCH_STRING"
+};
 
 void dbg_printf(const char *fmt, ...)
 {
@@ -536,7 +564,7 @@ void witcher_cgi_trace_finish()
 
     if (witcher_print_op){
         char logfn[50];
-        sprintf(logfn, "/tmp/trace-%s.dat", witcher_print_op);
+        sprintf(logfn, "/tmp/bitmap-%s.dat", witcher_print_op);
         FILE *tout_fp = fopen(logfn,"a");
         setbuf(tout_fp, NULL);
         int cnt = 0;
@@ -576,57 +604,97 @@ void vld_start_trace(){
     if (getenv("WITCHER_PRINT_OP")){
         char tracefn[50];
         char bbtracefn[50];
-        sprintf(tracefn, "/tmp/trace-%s.dat", getenv("WITCHER_PRINT_OP"));
-        sprintf(tracefn, "/tmp/bbtrace-%s.dat", getenv("WITCHER_PRINT_OP"));
-        FILE *ofile = fopen(tracefn, "w");
-        fclose(ofile);
-        FILE *bbtrace = fopen(tracefn, "w");
+        char bbcontroltracefn[50];
+        trace_round = time(NULL);
+        //+ temply solidify the trace file name +
+        trace_round = 1;
+        //+ temp (add round to save every round temply)+
+        sprintf(tracefn, "/tmp/trace-%s-%ld.dat", getenv("WITCHER_PRINT_OP"), trace_round);
+        sprintf(bbtracefn, "/tmp/bbtrace-%s-%ld.dat", getenv("WITCHER_PRINT_OP"), trace_round);
+        sprintf(bbcontroltracefn, "/tmp/bbcontroltrace-%s-%ld.dat", getenv("WITCHER_PRINT_OP"), trace_round);
+        //+ temply set mode to "a" +
+        FILE *optrace = fopen(tracefn, "a");
+        fprintf(optrace, "\n-------\n");
+        fclose(optrace);
+        FILE *bbtrace = fopen(bbtracefn, "a");
+        fprintf(bbtrace, "\n-------\n");
         fclose(bbtrace);
+        FILE *bbcontroltrace = fopen(bbcontroltracefn, "a");
+        fprintf(bbcontroltrace, "\n-------\n");
+        fclose(bbcontroltrace);
     }
 }
 
+//+ Check whether the current opcode is a control opcode +
+bool is_control_op(const char *opname) {
+    int array_size = sizeof(zend_control_opcodes) / sizeof(zend_control_opcodes[0]);
+    for (int i = 0; i < array_size; ++i) {
+        if (strcmp(opname, zend_control_opcodes[i]) == 0) {
+            return true;  // found
+        }
+    }
+    return false;  // not found
+}
+
 void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline){
-    FILE *ofile = NULL;
+    FILE *optrace = NULL;
     FILE *bbtrace = NULL;
+    FILE *bbcontroltrace = NULL;
+    bool print_bb_trace = false;
     // Get the current file name and line number
-    const char *filename = zend_get_executed_filename();
-    const uint32_t lineno = zend_get_executed_lineno();
-    
+    //filename和lineno可以改成仅当两者其一有变化时才输出，那BB是否也可以同理？
+    if ((last_lineno != zend_get_executed_lineno() || last_filename != zend_get_executed_filename()))
+    {
+        last_filename = zend_get_executed_filename();
+        last_lineno = zend_get_executed_lineno();
+        print_bb_trace = true; //+ temp for deciding whether to print BB trace +
+    }
+
     if (witcher_print_op){
         const char *opname = zend_get_opcode_name(opline->opcode);
         char tracefn[50];
         char bbtracefn[50];
-        sprintf(tracefn, "/tmp/trace-%s.dat", witcher_print_op); //+ Concate the file name +
-        sprintf(bbtracefn, "/tmp/bbtrace-%s.dat", witcher_print_op); //+ Concate the bbtrace file name +
-        ofile = fopen(tracefn, "a");
+        char bbcontroltracefn[50];
+        sprintf(tracefn, "/tmp/trace-%s-%ld.dat", witcher_print_op, trace_round); //+ Concate the file name +
+        sprintf(bbtracefn, "/tmp/bbtrace-%s-%ld.dat", witcher_print_op, trace_round); //+ Concate the bbtrace file name +
+        sprintf(bbcontroltracefn, "/tmp/bbcontroltrace-%s-%ld.dat", witcher_print_op, trace_round); //+ Concate the bbtrace file name +
+        optrace = fopen(tracefn, "a");
         bbtrace = fopen(bbtracefn, "a");
-        fprintf(bbtrace, "test1\n");
+        bbcontroltrace = fopen(bbcontroltracefn, "a");
         //debug_print(("%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type));
-        fprintf(ofile, "%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type);
-        fprintf(bbtrace, "%s:%d\n", filename, lineno);
-        fprintf(bbtrace, "test2\n");
+        fprintf(optrace, "%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type);
+        //+Below code is for temply comparing the BB trace with the BB control trace +
+        if (print_bb_trace){ //+ If the current BB is a new BB, print the BB trace +
+            fprintf(bbtrace, "%s:%d\n", last_filename, last_lineno);
+        }
+        if (is_control_op(opname)) { //+ If the current BB is a control BB, print the control BB trace +
+                fprintf(bbcontroltrace, "%s:%d:%s\n", last_filename, last_lineno, opname);
+        }
     }
 
     if (start_tracing) {
-        fprintf(bbtrace, "test3\n");
         op = (opline->lineno << 8) | opline->opcode ; //+ Unique ID for the current basic block +
 
         if (last != 0) {
-            int bitmapLoc = (op ^ last) % MAPSIZE; //+ Unique ID for the current path +
+            int bitmapLoc = (op ^ last) % MAPSIZE; //+ Unique loc for the current path +
 
             // turned off to disable afl code tracing
             afl_area_ptr[bitmapLoc]++;
         }
     }
-
+    
     last = op; //+ The current block becomes the parent block of potential new child blocks.
-    if (ofile){  //+ opcode Record and save +
-        fflush(ofile);
-        fclose(ofile);
+    if (optrace){  //+ opcode Record and save +
+        fflush(optrace);
+        fclose(optrace);
     }
     if (bbtrace){  //+ BB Record and save +
         fflush(bbtrace);
         fclose(bbtrace);
+    }
+    if (bbcontroltrace){  //+ BBcontrol Record and save +
+        fflush(bbcontroltrace);
+        fclose(bbcontroltrace);
     }
 }
 
