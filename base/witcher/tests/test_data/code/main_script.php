@@ -44,6 +44,17 @@ switch ($number) {
         break;
 }
 
+try {
+    $result = 1 / $number;
+} catch (Exception $e) {
+    echo "Exception: " . $e->getMessage() . "\n"; //12
+    throw $e;
+} finally {
+    echo "End\n"; //13
+    eval("echo 'Eval\n';"); //14
+    exit(0);
+}
+
 if($number == 3){
     system('ls ('); //ss
 }
