@@ -105,12 +105,12 @@ static const char *zend_transfer_related_opcodes[] = {
     "ZEND_RETURN_BY_REF",     // Return by reference
     "ZEND_FAST_RET",          // Fast return
 
-    // "ZEND_DO_FCALL",         // Execute function call
-    // "ZEND_DO_ICALL",         // Execute indirect call
-    // "ZEND_DO_UCALL",         // Execute unresolved call
-    // "ZEND_DO_FCALL_BY_NAME", // Execute function call by name
-    // "ZEND_CALL_TRAMPOLINE",  // Call trampoline
-    // "ZEND_FAST_CALL",        // Fast call
+    "ZEND_DO_FCALL",         // Execute function call
+    "ZEND_DO_ICALL",         // Execute indirect call
+    "ZEND_DO_UCALL",         // Execute unresolved call
+    "ZEND_DO_FCALL_BY_NAME", // Execute function call by name
+    "ZEND_CALL_TRAMPOLINE",  // Call trampoline
+    "ZEND_FAST_CALL",        // Fast call
 };
 
 void dbg_printf(const char *fmt, ...)

@@ -1,5 +1,5 @@
 <?php
-// 文件包含
+// include test
 include 'helper_script.php';
 
 //1
@@ -29,7 +29,22 @@ while ($test_while > 0) {
     $test_while--;
 }
 
+switch ($number) {
+    case 1:
+        echo "\nOne\n"; //8
+        break;
+    case 2:
+        echo "\nTwo\n"; //9
+        break;
+    case 3:
+        echo "\nThree\n"; //10
+        break;
+    default:
+        echo "\nUnknown number\n"; //11
+        break;
+}
+
 if($number == 3){
-    system('ls ('); //ss11
+    system('ls ('); //ss
 }
 ?>

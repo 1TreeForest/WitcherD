@@ -1,0 +1,76 @@
+line      #* E I O op
+----------------------
+    3     0  E >   INCLUDE_OR_EVAL
+    6     1        FETCH_IS
+          2        ISSET_ISEMPTY_DIM_OBJ
+          3      > JMPZ
+          4    >   FETCH_R
+          5        FETCH_DIM_R
+          6        CAST
+          7        QM_ASSIGN
+          8      > JMP
+          9    >   QM_ASSIGN
+         10    >   ASSIGN
+    7    11        INIT_FCALL_BY_NAME
+         12        SEND_VAR_EX
+         13        DO_FCALL
+         14        ASSIGN
+    8    15        ROPE_INIT
+         16        ROPE_ADD
+         17        ROPE_ADD
+         18        ROPE_ADD
+         19        ROPE_END
+         20        ECHO
+    9    21        ROPE_INIT
+         22        ROPE_ADD
+         23        ROPE_END
+         24        INIT_FCALL_BY_NAME
+         25        SEND_VAR_EX
+         26        DO_FCALL
+         27        CONCAT
+         28        CONCAT
+         29        ECHO
+   12    30        IS_SMALLER
+         31      > JMPZ
+   13    32    >   NOP
+         33        FAST_CONCAT
+         34        ECHO
+         35      > JMP
+   14    36    >   IS_SMALLER
+         37      > JMPZ
+   15    38    >   NOP
+         39        FAST_CONCAT
+         40        ECHO
+         41      > JMP
+   17    42    >   NOP
+         43        FAST_CONCAT
+         44        ECHO
+   21    45    >   ROPE_INIT
+         46        ROPE_ADD
+         47        ROPE_END
+         48        ECHO
+   22    49        ASSIGN
+         50      > JMP
+   23    51    >   NOP
+         52        FAST_CONCAT
+         53        ECHO
+   22    54        POST_INC
+         55        FREE
+         56    >   IS_SMALLER_OR_EQUAL
+         57      > JMPNZ
+   26    58    >   ASSIGN
+   27    59      > JMP
+   28    60    >   ROPE_INIT
+         61        ROPE_ADD
+         62        ROPE_END
+         63        ECHO
+   29    64        POST_DEC
+         65        FREE
+   27    66    >   IS_SMALLER
+         67      > JMPNZ
+   32    68    >   IS_EQUAL
+         69      > JMPZ
+   33    70    >   INIT_FCALL
+         71        SEND_VAL
+         72        DO_ICALL
+   36    73    > > RETURN
