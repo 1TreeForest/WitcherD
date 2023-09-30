@@ -83,23 +83,34 @@ static u_int32_t last_lineno = 0;
 static u_int32_t last_directive_lineno = 0;
 time_t trace_round = NULL;
 
-// 这里改成opcode，数字的，比字符串的肯定节省很多开销
+//+ 这里改成opcode，数字的，比字符串的肯定节省很多开销
+//+ 暂时先没考虑 调用
 static const char *zend_transfer_related_opcodes[] = {
-    "ZEND_JMP",               // 无条件跳转
-    "ZEND_JMPZ",              // 如果为零则跳转
-    "ZEND_JMPNZ",             // 如果非零则跳转
-    "ZEND_JMPZNZ",            // 如果为零则跳转到一个地址，否则跳转到另一个地址
-    "ZEND_JMPZ_EX",           // 如果为零则跳转，带有额外的检查
-    "ZEND_JMPNZ_EX",          // 如果非零则跳转，带有额外的检查
-    "ZEND_CASE",              // case语句
-    "ZEND_INCLUDE_OR_EVAL",   // 执行include或eval语句
-    "ZEND_EXIT",              // 执行exit语句
-    "ZEND_CATCH",             // catch语句
-    "ZEND_THROW",             // 抛出异常
-    "ZEND_HANDLE_EXCEPTION",  // 处理异常
-    "ZEND_DISCARD_EXCEPTION", // 丢弃异常
-    "ZEND_SWITCH_LONG",       // 长整型switch语句
-    "ZEND_SWITCH_STRING",     // 字符串switch语句
+    "ZEND_JMP",               // Unconditional jump
+    "ZEND_JMPZ",              // Jump if zero
+    "ZEND_JMPNZ",             // Jump if not zero
+    "ZEND_JMPZNZ",            // Jump to one address if zero, else jump to another address
+    "ZEND_JMPZ_EX",           // Jump if zero with extra check
+    "ZEND_JMPNZ_EX",          // Jump if not zero with extra check
+    "ZEND_CASE",              // Case statement
+    "ZEND_INCLUDE_OR_EVAL",   // Execute include or eval statement
+    "ZEND_EXIT",              // Execute exit statement
+    "ZEND_CATCH",             // Catch statement
+    "ZEND_THROW",             // Throw exception
+    "ZEND_HANDLE_EXCEPTION",  // Handle exception
+    "ZEND_DISCARD_EXCEPTION", // Discard exception
+    "ZEND_SWITCH_LONG",       // Long integer switch statement
+    "ZEND_SWITCH_STRING",     // String switch statement
+    "ZEND_RETURN",            // Return
+    "ZEND_RETURN_BY_REF",     // Return by reference
+    "ZEND_FAST_RET",          // Fast return
+
+    // "ZEND_DO_FCALL",         // Execute function call
+    // "ZEND_DO_ICALL",         // Execute indirect call
+    // "ZEND_DO_UCALL",         // Execute unresolved call
+    // "ZEND_DO_FCALL_BY_NAME", // Execute function call by name
+    // "ZEND_CALL_TRAMPOLINE",  // Call trampoline
+    // "ZEND_FAST_CALL",        // Fast call
 };
 
 void dbg_printf(const char *fmt, ...)

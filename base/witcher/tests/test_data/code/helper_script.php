@@ -9,7 +9,6 @@ function factorial($n) {
     }
 }
 
-// Basic block 3
 function checkEvenOrOdd($num) {
     // 条件语句
     if ($num % 2 == 0) {

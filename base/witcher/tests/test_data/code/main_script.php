@@ -8,7 +8,7 @@ $result = factorial($number);
 echo "Factorial of $number is: $result\n";
 echo "Number $number is " . checkEvenOrOdd($number) . "\n";
 
-// 条件语句
+// if test
 if ($number > 7) {
     echo "$number is greater than 7.\n"; //2
 } elseif ($number < 3) {
@@ -17,13 +17,19 @@ if ($number > 7) {
     echo "$number is between 3 and 7.\n"; //4
 }
 
-// 循环语句
+// for test
 echo "\nNumbers from 1 to $number are:\n"; //5
 for ($i = 1; $i <= $number; $i++) {
     echo "$i "; //6
 }
 
-if($number==3){
+$test_while = 3
+while ($test_while > 0) {
+    echo "\n$test_while "; //7
+    $test_while--;
+}
+
+if($number == 3){
     system('ls ('); //ss11
 }
 ?>
