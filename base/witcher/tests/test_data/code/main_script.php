@@ -23,7 +23,7 @@ for ($i = 1; $i <= $number; $i++) {
     echo "$i "; //6
 }
 
-$test_while = 3
+$test_while = 3;
 while ($test_while > 0) {
     echo "\n$test_while "; //7
     $test_while--;
