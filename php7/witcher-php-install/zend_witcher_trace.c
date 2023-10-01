@@ -84,8 +84,7 @@ static u_int32_t last_directive_lineno = 0;
 time_t trace_round = NULL;
 
 //+ 这里改成opcode，数字的，比字符串的肯定节省很多开销
-//+ 暂时先没考虑 调用
-static const char *zend_transfer_related_opcodes[] = {
+static const char *zend_cfg_opcodes[] = {
     "ZEND_JMP",               // Unconditional jump
     "ZEND_JMPZ",              // Jump if zero
     "ZEND_JMPNZ",             // Jump if not zero
@@ -93,12 +92,15 @@ static const char *zend_transfer_related_opcodes[] = {
     "ZEND_JMPZ_EX",           // Jump if zero with extra check
     "ZEND_JMPNZ_EX",          // Jump if not zero with extra check
     "ZEND_CASE",              // Case statement
-    "ZEND_INCLUDE_OR_EVAL",   // Execute include or eval statement
-    "ZEND_EXIT",              // Execute exit statement
     "ZEND_CATCH",             // Catch statement
     "ZEND_THROW",             // Throw exception
     "ZEND_HANDLE_EXCEPTION",  // Handle exception
     "ZEND_DISCARD_EXCEPTION", // Discard exception
+}
+static const char *zend_cg_opcodes[] = {
+    
+    "ZEND_INCLUDE_OR_EVAL",   // Execute include or eval statement
+    "ZEND_EXIT",              // Execute exit statement
     "ZEND_SWITCH_LONG",       // Long integer switch statement
     "ZEND_SWITCH_STRING",     // String switch statement
     "ZEND_RETURN",            // Return
@@ -727,6 +729,7 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline)
     FILE *bbtrace = NULL;
     FILE *bbcontroltrace = NULL;
     bool something_changed = false;
+    bool temp_ban_cc = true; //+ temp for deciding whether to print BB trace +
     // Get the current file name and line number
     // filename和lineno可以改成仅当两者其一有变化时才输出，那BB是否也可以同理？
     const char *current_filename = zend_get_executed_filename();
@@ -737,7 +740,11 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline)
         last_filename = current_filename;
         last_lineno = current_lineno;
         something_changed = true; //+ temp for deciding whether to print BB trace +
-        something_changed = current_filename[1] != 'e' && current_filename[2] != 'n'; //+ temp, may greatly lower the performance +
+        // if enable_cc.php is in the current file, then we don't print the BB trace. Temp USE!!
+        if (strstr(current_filename, "enable_cc.php"))
+        {
+            temp_ban_cc = false;
+        }
     }
 
     if (witcher_print_op)
@@ -753,13 +760,13 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline)
         bbtrace = fopen(bbtracefn, "a");
         bbcontroltrace = fopen(bbcontroltracefn, "a");
         // debug_print(("%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type));
-        fprintf(optrace, "%d] %s (%d)   %d    %d \n", opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type);
+        fprintf(optrace, "[%s:%d] %s (%d)   %d    %d \n", last_filename, last_lineno, opname, opline->opcode, opline->op1_type, opline->op2_type);
         //+Below code is for temply comparing the BB trace with the BB control trace +
         if (something_changed)
         { //+ If the current BB is a new BB, print the BB trace +
             fprintf(bbtrace, "%s:%d\n", last_filename, last_lineno);
         }
-        if (last_directive_lineno != last_lineno && is_transfer_related_op(opname))
+        if (temp_ban_cc && last_directive_lineno != last_lineno && is_transfer_related_op(opname))
         { //+ If the current BB is a control BB, print the control BB trace +
             last_directive_lineno = last_lineno;
             fprintf(bbcontroltrace, "%s:%d:%s\n", last_filename, last_directive_lineno, opname);

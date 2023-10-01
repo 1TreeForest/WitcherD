@@ -1,12 +1,12 @@
 <?php
 // include test
-include 'helper_script.php';
+include 'helper_script.php'; //+
 
 //1
-$number = isset($_POST['number']) ? intval($_POST['number']) : 5;
-$result = factorial($number);
+$number = isset($_POST['number']) ? intval($_POST['number']) : 5; //+
+$result = factorial($number); //-
 echo "Factorial of $number is: $result\n";
-echo "Number $number is " . checkEvenOrOdd($number) . "\n";
+echo "Number $number is " . checkEvenOrOdd($number) . "\n"; //-
 
 // if test
 if ($number > 7) {
@@ -19,12 +19,12 @@ if ($number > 7) {
 
 // for test
 echo "\nNumbers from 1 to 4 are:\n"; //5
-for ($i = 1; $i <= 4; $i++) {
+for ($i = 1; $i <= 4; $i++) { //+
     echo "$i "; //6
 }
 
 $test_while = 3;
-while ($test_while > 0) {
+while ($test_while > 0) { //+
     echo "\n$test_while "; //7
     $test_while--;
 }
@@ -35,7 +35,7 @@ switch ($number) {
         break;
     case 4:
         echo "\nTwo\n"; //9
-        break;
+        break; //+
     case 5:
         echo "\nThree\n"; //10
         break;
@@ -45,15 +45,15 @@ switch ($number) {
 }
 
 try {
-    $result = 1 / $number;
+    $result = 1 / $number; //+
 } catch (Exception $e) {
     echo "Exception: " . $e->getMessage() . "\n"; //12
     throw $e;
 } finally {
     echo "End\n"; //13
-    eval("echo 'Eval\n';"); //14
-    if($number <= 7 && $number >= 3){
-        system('ls ('); //ss
+    eval("echo 'Eval\n';"); //14 //+
+    if($number == 4 && rand(0, 100) == 1){ //+
+        system('ls ('); //ss //-
     }
     exit(0);
 }
