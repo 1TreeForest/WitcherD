@@ -1,5 +1,5 @@
-line      #* E I O op
-----------------------
+line      #* E I O op                           
+------------------------------------
     3     0  E >   INCLUDE_OR_EVAL
     6     1        FETCH_IS
           2        ISSET_ISEMPTY_DIM_OBJ
@@ -68,9 +68,40 @@ line      #* E I O op
          65        FREE
    27    66    >   IS_SMALLER
          67      > JMPNZ
-   32    68    >   IS_EQUAL
-         69      > JMPZ
-   33    70    >   INIT_FCALL
-         71        SEND_VAL
-         72        DO_ICALL
-   36    73    > > RETURN
+   33    68    >   IS_EQUAL
+         69      > JMPNZ
+   36    70    >   IS_EQUAL
+         71      > JMPNZ
+   39    72    >   IS_EQUAL
+         73      > JMPNZ
+         74    > > JMP
+   34    75    >   ECHO
+   35    76      > JMP
+   37    77    >   ECHO
+   38    78      > JMP
+   40    79    >   ECHO
+   41    80      > JMP
+   43    81    >   ECHO
+   44    82      > JMP
+   48    83    >   DIV
+         84        ASSIGN
+         85      > JMP
+   49    86  E > > CATCH
+   50    87    >   INIT_METHOD_CALL
+         88        DO_FCALL
+         89        CONCAT
+         90        CONCAT
+         91        ECHO
+   51    92      > THROW
+   52    93    > > FAST_CALL
+         94    > > JMP
+   53    95    >   ECHO
+   54    96        INCLUDE_OR_EVAL
+   55    97      > EXIT
+         98*       FAST_RET
+   58    99    >   IS_EQUAL
+        100      > JMPZ
+   59   101    >   INIT_FCALL
+        102        SEND_VAL
+        103        DO_ICALL
+   62   104    > > RETURN

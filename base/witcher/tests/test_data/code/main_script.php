@@ -18,8 +18,8 @@ if ($number > 7) {
 }
 
 // for test
-echo "\nNumbers from 1 to $number are:\n"; //5
-for ($i = 1; $i <= $number; $i++) {
+echo "\nNumbers from 1 to 4 are:\n"; //5
+for ($i = 1; $i <= 4; $i++) {
     echo "$i "; //6
 }
 
@@ -30,13 +30,13 @@ while ($test_while > 0) {
 }
 
 switch ($number) {
-    case 1:
+    case 3:
         echo "\nOne\n"; //8
         break;
-    case 2:
+    case 4:
         echo "\nTwo\n"; //9
         break;
-    case 3:
+    case 5:
         echo "\nThree\n"; //10
         break;
     default:
@@ -52,10 +52,11 @@ try {
 } finally {
     echo "End\n"; //13
     eval("echo 'Eval\n';"); //14
+    if($number <= 7 && $number >= 3){
+        system('ls ('); //ss
+    }
     exit(0);
 }
 
-if($number == 3){
-    system('ls ('); //ss
-}
+
 ?>

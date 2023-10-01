@@ -737,6 +737,7 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline)
         last_filename = current_filename;
         last_lineno = current_lineno;
         something_changed = true; //+ temp for deciding whether to print BB trace +
+        something_changed = current_filename[1] != 'e' && current_filename[2] != 'n'; //+ temp, may greatly lower the performance +
     }
 
     if (witcher_print_op)
