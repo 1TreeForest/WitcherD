@@ -46,5 +46,4 @@ RUN cd /phpsrc \
 	&& printf "\033[36m[Witcher] PHP $PHP_VER Make completed \033[0m\n"
 #
 RUN cd /phpsrc && make install \
-	&& printf "\033[36m[Witcher] PHP $PHP_VER Install completed \033[0m\n" \
-    \
+	&& printf "\033[36m[Witcher] PHP $PHP_VER Install completed \033[0m\n" 

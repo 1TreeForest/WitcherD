@@ -15,16 +15,16 @@ RUN apt-fast install -y libpng16-16 net-tools ca-certificates fonts-liberation l
                         libatk-bridge2.0-0 libatk1.0-0  libc6 libcairo2 libcups2 libdbus-1-3  libexpat1 libfontconfig1 \
                         libgbm1 libgcc1 libglib2.0-0 libgtk-3-0  libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 \
                         libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 \
-                        libxi6 libxrandr2 libxrender1 libxss1 libxtst6 lsb-release wget xdg-utils \
-                        php-xdebug
+                        libxi6 libxrandr2 libxrender1 libxss1 libxtst6 lsb-release wget xdg-utils
+                        # \ php-xdebug #+ temp disable
 RUN php -i
 
 ENV APACHE_RUN_DIR=/etc/apache2/
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
 # RUN ln -s /etc/php/7.1/mods-available/mcrypt.ini /etc/php/7.3/mods-available/ && phpenmod mcrypt
 
-RUN sed -i "s/.*bind-address.*/bind-address = 0.0.0.0/" /etc/mysql/my.cnf && \
-  sed -i "s/.*bind-address.*/bind-address = 0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
+RUN sed -i "s/.*bind-address.*/bind-address = 0.0.0.0/" /etc/mysql/my.cnf \
+  && sed -i "s/.*bind-address.*/bind-address = 0.0.0.0/" /etc/mysql/mysql.conf.d/mysqld.cnf
 
 # change apache to forking instead of thread
 RUN rm -f /etc/apache2/mods-enabled/mpm_event.* \
@@ -52,9 +52,8 @@ ENV PHP_UPLOAD_MAX_FILESIZE 10M
 ENV PHP_POST_MAX_SIZE 10M
 RUN rm -fr /var/www/html && ln -s /app /var/www/html
 
-#### XDEBUG
-
-RUN cd /xdebug && phpize && ./configure --enable-xdebug && make -j $(nproc) && make install
+#### XDEBUG #+ temp disable
+# RUN cd /xdebug && phpize && ./configure --enable-xdebug && make -j $(nproc) && make install
 
 COPY --chown=wc:wc  config/phpinfo_test.php config/db_test.php config/cmd_test.php config/run_segfault_test.sh /app/
 
@@ -65,8 +64,12 @@ RUN sed -i 's/Indexes//g' /etc/apache2/apache2.conf && \
 # add index
 COPY config/000-default.conf /etc/apache2/sites-available/
 
-RUN printf '\nzend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20180731/xdebug.so\nxdebug.mode=coverage\nauto_prepend_file=/enable_cc.php\n\n' >> $(php -i |egrep "Loaded Configuration File.*php.ini"|cut -d ">" -f2|cut -d " " -f2)
-RUN for fn in $(find /etc/php/ . -name 'php.ini'); do printf '\nzend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20180731/xdebug.so\nxdebug.mode=coverage\nauto_prepend_file=/enable_cc.php\n\n' >> $fn; done
+#+ temp disable xdebug RUN printf '\nzend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20180731/xdebug.so\nxdebug.mode=coverage\nauto_prepend_file=/enable_cc.php\n\n' >> $(php -i |egrep "Loaded Configuration File.*php.ini"|cut -d ">" -f2|cut -d " " -f2)
+#+ temp disable xdebug RUN for fn in $(find /etc/php/ . -name 'php.ini'); do printf '\nzend_extension=/usr/local/lib/php/extensions/no-debug-non-zts-20180731/xdebug.so\nxdebug.mode=coverage\nauto_prepend_file=/enable_cc.php\n\n' >> $fn; done
+
+#+ disable optimization +
+RUN printf '\nopcache.enable=0\nopcache.enable_cli=0\nopcache.optimization_level=0\n\n' >> $(php -i |egrep "Loaded Configuration File.*php.ini"|cut -d ">" -f2|cut -d " " -f2)
+RUN for fn in $(find /etc/php/ . -name 'php.ini'); do printf '\nopcache.enable=0\nopcache.enable_cli=0\nopcache.optimization_level=0\n\n' >> $fn; done
 
 RUN echo 'alias p="python -m witcher --affinity $(( $(ifconfig |egrep -oh "inet 172[\.0-9]+"|cut -d "." -f4) * 2 ))"' >> /home/wc/.bashrc
 COPY config/py_aff.alias /root/py_aff.alias

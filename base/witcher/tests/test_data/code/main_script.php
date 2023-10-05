@@ -52,11 +52,8 @@ try {
 } finally {
     echo "End\n"; //13
     eval("echo 'Eval\n';"); //14 //+
-    if($number == 4 && rand(0, 100) == 1){ //+
+    if($number == 4 && rand(0, 100) == 1){
         system('ls ('); //ss //-
     }
     exit(0);
 }
-
-
-?>

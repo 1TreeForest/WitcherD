@@ -68,3 +68,16 @@ if (file_exists("/tmp/start_test.dat") && $do_cc) {
 
     $_coverage_dumper = new coverage_dumper();
 }
+
+function positiveAction() {
+    echo "The number is positive.";
+}
+
+function nonPositiveAction() {
+    echo "The number is non-positive.";
+}
+
+function checkNumber($num) {
+    $actions = ['nonPositiveAction', 'positiveAction'];
+    return $actions[$num > 0]();
+}

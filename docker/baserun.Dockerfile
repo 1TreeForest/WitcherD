@@ -36,16 +36,15 @@ RUN git clone https://github.com/google/AFL.git /afl \
     && cd /afl \
     && make && make install
 
-RUN sudo rm -rf /var/lib/mysql
-RUN  /usr/sbin/mysqld --initialize-insecure
+RUN sudo rm -rf /var/lib/mysql \
+    && /usr/sbin/mysqld --initialize-insecure
 
 RUN pip3 install --upgrade pip && pip3 install supervisor
 
-# Create wc user
-RUN useradd -s /bin/bash -m wc
-# Add wc to sudo group
-RUN usermod -aG sudo wc
-RUN echo "wc ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+# Create wc user and add wc to sudo group
+RUN useradd -s /bin/bash -m wc \
+    && usermod -aG sudo wc \
+    && echo "wc ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 #RUN su - wc -c "source /usr/share/virtualenvwrapper/virtualenvwrapper.sh && mkvirtualenv -p `which python3` witcher"
 
@@ -57,8 +56,8 @@ RUN su - wc -c "pip3 install protobuf==3.19.6 termcolor setuptools"
 RUN su - wc -c "pip3 install git+https://github.com/etrickel/phuzzer"
 
 ######### last installs, b/c don't want to wait for phuzzer stuff again.
-RUN apt-fast install -y jq
-RUN wget https://github.com/sharkdp/bat/releases/download/v0.15.0/bat_0.15.0_amd64.deb -O /root/bat15.deb && sudo dpkg -i /root/bat15.deb
+RUN apt-fast install -y jq \
+    && wget https://github.com/sharkdp/bat/releases/download/v0.15.0/bat_0.15.0_amd64.deb -O /root/bat15.deb && sudo dpkg -i /root/bat15.deb
 
 
 ######### wc's environment setup
@@ -81,8 +80,8 @@ RUN bash /home/wc/nvm_install.sh \
     && nvm install 16
 ENV NVM_DIR /home/wc/.nvm
 #RUN sudo mkdir /node_modules && sudo chown wc:wc /node_modules && sudo apt-get install -y npm
-RUN sudo apt-get install -y npm libgbm-dev
-RUN . $NVM_DIR/nvm.sh && npm install puppeteer cheerio
+RUN sudo apt-get install -y npm libgbm-dev \
+    && . $NVM_DIR/nvm.sh && npm install puppeteer cheerio
 
 USER root
 RUN mkdir /app && chown www-data:wc /app
@@ -100,12 +99,10 @@ RUN ln -s /p /projects
 COPY config/network_config.sh /netconf.sh
 RUN chmod +x /netconf.sh
 
-ENV TZ=America/Phoenix
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-RUN echo "export TZ=$TZ" >> /home/wc/.bashrc
-
-RUN usermod -a -G www-data wc
+ENV TZ=Asia/Hong_Kong
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \ 
+    && echo "export TZ=$TZ" >> /home/wc/.bashrc \
+    && usermod -a -G www-data wc
 
 #"Installing" the Witcher's Dash that abends on a parsing error when STRICT=1 is set.
 #
