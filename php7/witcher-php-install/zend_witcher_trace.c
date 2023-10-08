@@ -37,8 +37,8 @@ void dbg_printf(const char *fmt, ...);
 
 #define STDIN_FILENO 0
 
-static int last = 0;
-static int op = 0;
+static int last_op = 0;
+static int cur_op = 0;
 
 static int MAX_CMDLINE_LEN = 128 * 1024;
 
@@ -679,8 +679,8 @@ void witcher_cgi_trace_finish()
         fclose(tout_fp);
     }
 
-    op = 0;
-    last = 0;
+    cur_op = 0;
+    last_op = 0;
     trace_index = 0;
 }
 
@@ -725,7 +725,7 @@ bool is_in_list(const char *opname, const char *op_list[])
     return false;
 }
 
-void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline)
+void vld_external_trace(zend_execute_data *execute_data)
 {
     FILE *optrace = NULL;
     FILE *bbtrace = NULL;
@@ -735,7 +735,7 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline)
     // Get the current file name and line number
     // filename和lineno可以改成仅当两者其一有变化时才输出，那BB是否也可以同理？
     const char *current_filename = zend_get_executed_filename();
-    const u_int32_t current_lineno = opline->lineno;
+    const u_int32_t current_lineno = execute_data->opline->lineno;
     if (strstr(current_filename, "enable_cc.php"))
         {
             temp_ban_cc = false;
@@ -750,7 +750,7 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline)
 
     if (witcher_print_op)
     {
-        const char *opname = zend_get_opcode_name(opline->opcode);
+        const char *opname = zend_get_opcode_name(execute_data->opline->opcode);
         char tracefn[50];
         char bbtracefn[50];
         char bbcontroltracefn[50];
@@ -760,8 +760,8 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline)
         optrace = fopen(tracefn, "a");
         bbtrace = fopen(bbtracefn, "a");
         bbcontroltrace = fopen(bbcontroltracefn, "a");
-        // debug_print(("%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->opcode, opline->op1_type, opline->op2_type));
-        fprintf(optrace, "[%s:%d] %s (%d)   %d    %d \n", last_filename, last_lineno, opname, opline->opcode, opline->op1_type, opline->op2_type);
+        // debug_print(("%d] %s (%d)   %d    %d \n",execute_data->opline->lineno, opname, execute_data->opline->opcode, execute_data->opline->op1_type, execute_data->opline->op2_type));
+        fprintf(optrace, "[%s:%d] %s (%d)\n", last_filename, last_lineno, opname, execute_data->opline->opcode);
         //+Below code is for temply comparing the BB trace with the BB control trace +
         if (something_changed)
         { //+ If the current BB is a new BB, print the BB trace +
@@ -779,18 +779,18 @@ void vld_external_trace(zend_execute_data *execute_data, const zend_op *opline)
 
     if (start_tracing)
     {
-        op = (opline->lineno << 8) | opline->opcode; //+ Unique ID for the current basic block +
+        cur_op = (execute_data->opline->lineno << 8) | execute_data->opline->opcode; //+ Unique ID for the current basic block +
 
-        if (last != 0)
+        if (last_op != 0)
         {
-            int bitmapLoc = (op ^ last) % MAPSIZE; //+ Unique loc for the current path +
+            int bitmapLoc = (cur_op ^ last_op) % MAPSIZE; //+ Unique loc for the current path +
 
             // turned off to disable afl code tracing
             afl_area_ptr[bitmapLoc]++;
         }
     }
 
-    last = op; //+ The current block becomes the parent block of potential new child blocks.
+    last_op = cur_op; //+ The current block becomes the parent block of potential new child blocks.
     if (optrace)
     { //+ opcode Record and save +
         fflush(optrace);

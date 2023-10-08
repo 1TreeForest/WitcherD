@@ -1,5 +1,5 @@
 <?php
-$do_cc = false; //+ Temply disable +
+$do_cc = true; //+ temp disable
 
 if (isset($_SERVER['SCRIPT_FILENAME']) && !empty($_SERVER['SCRIPT_FILENAME'])) {
     $bn = basename($_SERVER['SCRIPT_FILENAME'], ".php");
@@ -9,7 +9,7 @@ if (isset($_SERVER['SCRIPT_FILENAME']) && !empty($_SERVER['SCRIPT_FILENAME'])) {
 }
 if (file_exists("/tmp/start_test.dat") && $do_cc) {
 
-    date_default_timezone_set("America/Phoenix");
+    date_default_timezone_set("Aisa/HongKong");
     $coverage_dpath = "/dev/shm/coverages/"; //__DIR__;
     if (!is_dir($coverage_dpath)){
         mkdir($coverage_dpath, 0777, true);
@@ -67,17 +67,4 @@ if (file_exists("/tmp/start_test.dat") && $do_cc) {
     }
 
     $_coverage_dumper = new coverage_dumper();
-}
-
-function positiveAction() {
-    echo "The number is positive.";
-}
-
-function nonPositiveAction() {
-    echo "The number is non-positive.";
-}
-
-function checkNumber($num) {
-    $actions = ['nonPositiveAction', 'positiveAction'];
-    return $actions[$num > 0]();
 }

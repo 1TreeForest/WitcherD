@@ -27,7 +27,7 @@ RUN cd /phpsrc &&         \
 #		--with-config-file-path="$PHP_INI_DIR" \
 #		--with-config-file-scan-dir="$PHP_INI_DIR/conf.d" \
         --with-apxs2=/usr/bin/apxs \
-#		\
+ 		\
 		--enable-cgi      \
 		--enable-ftp      \
 		--enable-mbstring \
