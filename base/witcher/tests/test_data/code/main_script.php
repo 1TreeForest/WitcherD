@@ -33,7 +33,7 @@ switch ($number) {
     case 3:
         echo "\nOne\n"; //8
         break;
-    case 4:
+    case 4:  //+ 这个BB会被命中两次，36行和37行，但可以只指定这个BB的标识为36行，命中37行时会找不到，就可以跳过这次命中
         echo "\nTwo\n"; //9
         break; //+
     case 5:

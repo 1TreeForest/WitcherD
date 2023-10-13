@@ -1,5 +1,6 @@
 <?php
-
+$test1 = 1;
+$test2 = 2;
 function factorial($n) {
     // 条件语句
     if ($n <= 1) {
@@ -8,7 +9,7 @@ function factorial($n) {
         return $n * factorial($n - 1); //8 //+
     }
 }
-
+$test3 = 3;
 function checkEvenOrOdd($num) { //+
     // 条件语句
     if ($num % 2 == 0) {
@@ -17,4 +18,5 @@ function checkEvenOrOdd($num) { //+
         return "odd"; //10
     }
 }
+$test4 =4;
 ?>

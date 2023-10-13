@@ -78,43 +78,41 @@ int pipefds[2];
 int top_pid = 0;
 
 //+ From here is what Directed does +
-static char *last_filename = NULL;
-static u_int32_t last_lineno = 0;
-time_t trace_round = NULL;
+static bool jmpx_found = false;
+static bool funx_found = false;
+static time_t trace_round = NULL;
 
 //+ 这里改成op'code'，数字的，比字符串的肯定节省很多开销
-static const char *zend_transfer_opcodes[] = {
-    "ZEND_JMP",               // Unconditional jump
-    "ZEND_JMPZ",              // Jump if zero
-    "ZEND_JMPNZ",             // Jump if not zero
-    "ZEND_JMPZNZ",            // Jump to one address if zero, else jump to another address
-    "ZEND_JMPZ_EX",           // Jump if zero with extra check
-    "ZEND_JMPNZ_EX",          // Jump if not zero with extra check
-    "ZEND_CATCH",             // Catch statement
-    "ZEND_THROW",             // Throw exception
-    "ZEND_HANDLE_EXCEPTION",  // Handle exception
-    "ZEND_DISCARD_EXCEPTION", // Discard exception
-    "ZEND_CASE",              // Case statement
-    "ZEND_SWITCH_LONG",       // Long integer switch statement
-    "ZEND_SWITCH_STRING",     // String switch statement
+static const zend_uchar zend_jmpx[] = {
+    ZEND_JMP,      // Unconditional jump
+    ZEND_JMPZ,     // Jump if zero
+    ZEND_JMPNZ,    // Jump if not zero
+    ZEND_JMPZNZ,   // Jump to one address if zero, else jump to another address
+    ZEND_JMPZ_EX,  // Jump if zero with extra check
+    ZEND_JMPNZ_EX, // Jump if not zero with extra check
 };
 
-static const char *zend_include_or_eval[] = {
-    "ZEND_INCLUDE_OR_EVAL", // Execute include or eval statement
+static const zend_exceptions[] = {
+    // ZEND_CATCH,             // Catch statement？
+    // ZEND_HANDLE_EXCEPTION,  // Handle exception？
+    // ZEND_DISCARD_EXCEPTION, // Discard exception？
 };
 
-// static const char *zend_func_opcodes[] = {
-//     "ZEND_DO_FCALL",          // Execute function call
-//     "ZEND_DO_ICALL",          // Execute indirect call
-//     "ZEND_DO_UCALL",          // Execute unresolved call
-//     "ZEND_DO_FCALL_BY_NAME",  // Execute function call by name
-//     "ZEND_CALL_TRAMPOLINE",   // Call trampoline
-//     "ZEND_FAST_CALL",         // Fast call
-//     "ZEND_RETURN",            // Return
-//     "ZEND_RETURN_BY_REF",     // Return by reference
-//     "ZEND_FAST_RET",          // Fast return
-//     "ZEND_EXIT",              // Execute exit statement
-// };
+static const zend_uchar zend_funx[] = {
+    ZEND_DO_FCALL,         // Execute function call
+    ZEND_RETURN,           // Return
+    ZEND_RETURN_BY_REF,    // Return by reference
+    ZEND_DO_ICALL,         // Execute indirect call
+    ZEND_DO_UCALL,         // Execute unresolved call
+    ZEND_DO_FCALL_BY_NAME, // Execute function call by name
+    ZEND_CALL_TRAMPOLINE,  // Call trampoline
+    ZEND_FAST_CALL,        // Fast call
+    ZEND_FAST_RET,         // Fast return
+};
+
+static const zend_uchar zend_include_or_eval[] = {
+    ZEND_INCLUDE_OR_EVAL, // Execute include or eval statement
+};
 
 void dbg_printf(const char *fmt, ...)
 {
@@ -690,14 +688,13 @@ void vld_start_trace()
     {
         char tracefn[50];
         char bbtracefn[50];
-        char bbcontroltracefn[50];
         trace_round = time(NULL);
         //+ temply solidify the trace file name +
         trace_round = 1;
         //+ temp (add round to save every round temply)+
         sprintf(tracefn, "/tmp/trace-%s-%ld.dat", witcher_print_op, trace_round);
         sprintf(bbtracefn, "/tmp/bbtrace-%s-%ld.dat", witcher_print_op, trace_round);
-        sprintf(bbcontroltracefn, "/tmp/bbcontroltrace-%s-%ld.dat", witcher_print_op, trace_round);
+
         //+ temply set mode to "a" +
         FILE *optrace = fopen(tracefn, "a");
         fprintf(optrace, "\n-------\n");
@@ -705,19 +702,15 @@ void vld_start_trace()
         FILE *bbtrace = fopen(bbtracefn, "a");
         fprintf(bbtrace, "\n-------\n");
         fclose(bbtrace);
-        FILE *bbcontroltrace = fopen(bbcontroltracefn, "a");
-        fprintf(bbcontroltrace, "\n-------\n");
-        fclose(bbcontroltrace);
     }
 }
 
 //+ Check whether the current opcode is a transfer related opcode +
-bool is_in_list(const char *opname, const char *op_list[])
+bool is_opcode_in_array(zend_uchar opcode, zend_uchar opcodes[], size_t length)
 {
-    int array_size = sizeof(op_list) / sizeof(op_list[0]);
-    for (int i = 0; i < array_size; i++)
+    for (size_t i = 0; i < length; i++)
     {
-        if (strcmp(opname, op_list[i]) == 0)
+        if (opcodes[i] == opcode)
         {
             return true;
         }
@@ -725,61 +718,76 @@ bool is_in_list(const char *opname, const char *op_list[])
     return false;
 }
 
-void vld_external_trace(zend_execute_data *execute_data)
+//+ use execute_data->opline will be inaccurate +
+void vld_external_trace(const char *op, const zend_op *opline)
 {
     FILE *optrace = NULL;
     FILE *bbtrace = NULL;
-    FILE *bbcontroltrace = NULL;
-    bool something_changed = false;
-    bool temp_ban_cc = true; //+ temp for deciding whether to print BB trace +
+
     // Get the current file name and line number
     // filename和lineno可以改成仅当两者其一有变化时才输出，那BB是否也可以同理？
     const char *current_filename = zend_get_executed_filename();
-    const u_int32_t current_lineno = execute_data->opline->lineno;
-    if (strstr(current_filename, "enable_cc.php"))
-        {
-            temp_ban_cc = false;
-        }
-
-    if (last_lineno != current_lineno || last_filename != current_filename)
-    {
-        last_filename = current_filename;
-        last_lineno = current_lineno;
-        something_changed = true; //+ temp for deciding whether to print BB trace +
-    }
+    const u_int32_t current_lineno = opline->lineno;
 
     if (witcher_print_op)
     {
-        const char *opname = zend_get_opcode_name(execute_data->opline->opcode);
+        const char *opname = zend_get_opcode_name(opline->opcode);
         char tracefn[50];
         char bbtracefn[50];
-        char bbcontroltracefn[50];
-        sprintf(tracefn, "/tmp/trace-%s-%ld.dat", witcher_print_op, trace_round);                   //+ Concate the file name +
-        sprintf(bbtracefn, "/tmp/bbtrace-%s-%ld.dat", witcher_print_op, trace_round);               //+ Concate the bbtrace file name +
-        sprintf(bbcontroltracefn, "/tmp/bbcontroltrace-%s-%ld.dat", witcher_print_op, trace_round); //+ Concate the bbtrace file name +
+        sprintf(tracefn, "/tmp/trace-%s-%ld.dat", witcher_print_op, trace_round);     //+ Concate the file name +
+        sprintf(bbtracefn, "/tmp/bbtrace-%s-%ld.dat", witcher_print_op, trace_round); //+ Concate the bbtrace file name +
         optrace = fopen(tracefn, "a");
         bbtrace = fopen(bbtracefn, "a");
-        bbcontroltrace = fopen(bbcontroltracefn, "a");
-        // debug_print(("%d] %s (%d)   %d    %d \n",execute_data->opline->lineno, opname, execute_data->opline->opcode, execute_data->opline->op1_type, execute_data->opline->op2_type));
-        fprintf(optrace, "[%s:%d] %s (%d)\n", last_filename, last_lineno, opname, execute_data->opline->opcode);
-        //+Below code is for temply comparing the BB trace with the BB control trace +
-        if (something_changed)
-        { //+ If the current BB is a new BB, print the BB trace +
-            fprintf(bbtrace, "%s:%d\n", last_filename, last_lineno);
-        }
-        if (temp_ban_cc && (is_in_list(opname, zend_transfer_opcodes) || is_in_list(opname, zend_include_or_eval) /* || is_in_list(opname, zend_funccall_opcodes)*/))
-        { //+ If the current BB is a control BB, print the control BB trace +
-            fprintf(bbcontroltrace, "%s:%d:%s\n", last_filename, last_lineno, opname);
-        }
-        else if (strstr(opname, "JMP"))
+
+        // debug_print(("%d] %s (%d)   %d    %d \n",opline->lineno, opname, opline->lineno, opline->op1_type, opline->op2_type));
+        if (!jmpx_found && !funx_found)
         {
-            fprintf(bbcontroltrace, "miss:%s:%d:%s\n", last_filename, last_lineno, opname);
+            fprintf(optrace, "[%s:%d] %s (%d) {%s}\n", current_filename, current_lineno, opname, opline->opcode, op);
+        }
+
+        if (jmpx_found)
+        {
+            fprintf(optrace, "\tjmpx_to:[%s:%d] %s (%d) {%s}\n", current_filename, current_lineno, opname, opline->opcode, op);
+            fprintf(bbtrace, "\tjmpx_to:%s:%d:%s\n", current_filename, current_lineno, opname);
+            jmpx_found = false;
+        }
+
+        if (funx_found)
+        {
+            fprintf(optrace, "\tfunx_to:[%s:%d] %s (%d) {%s}\n", current_filename, current_lineno, opname, opline->opcode, op);
+            fprintf(bbtrace, "\tfunx_to:%s:%d:%s\n", current_filename, current_lineno, opname);
+            funx_found = false;
+        }
+
+        //+ Below code is for temply comparing the BB trace with the BB control trace +
+        if (is_opcode_in_array(opline->opcode, zend_jmpx, sizeof(zend_jmpx) / sizeof(zend_uchar)))
+        { //+ If the current BB is a control BB, print the control BB trace +
+            fprintf(bbtrace, "%s:%d:%s\n", current_filename, current_lineno, opname);
+            jmpx_found = true;
+        }
+
+        if (is_opcode_in_array(opline->opcode, zend_funx, sizeof(zend_funx) / sizeof(zend_uchar)))
+        { //+ If the current BB is a control BB, print the control BB trace +
+            fprintf(bbtrace, "%s:%d:%s\n", current_filename, current_lineno, opname);
+            funx_found = true;
+        }
+
+        //+ special case for include and eval +
+        if (is_opcode_in_array(opline->opcode, zend_include_or_eval, sizeof(zend_include_or_eval) / sizeof(zend_uchar)))
+        { //+ If the current BB is a control BB, print the control BB trace +
+            fprintf(bbtrace, "%s:%d:%s\n", current_filename, current_lineno, opname);
+            //+ treat include as a BB transfer, eval as a func call. +
+            if (opline->extended_value == ZEND_EVAL) {
+                funx_found = true;
+            } else {
+                jmpx_found = true;
+            }
         }
     }
 
     if (start_tracing)
     {
-        cur_op = (execute_data->opline->lineno << 8) | execute_data->opline->opcode; //+ Unique ID for the current basic block +
+        cur_op = (opline->lineno << 8) | opline->lineno; //+ Unique ID for the current basic block +
 
         if (last_op != 0)
         {
@@ -800,10 +808,5 @@ void vld_external_trace(zend_execute_data *execute_data)
     { //+ BB Record and save +
         fflush(bbtrace);
         fclose(bbtrace);
-    }
-    if (bbcontroltrace)
-    { //+ BBcontrol Record and save +
-        fflush(bbcontroltrace);
-        fclose(bbcontroltrace);
     }
 }
